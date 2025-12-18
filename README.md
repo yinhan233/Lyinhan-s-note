@@ -1,3 +1,3 @@
-大一开始做的一些渣渣笔记,不全0.0
-java笔记来自[https://www.itbaima.cn/zh-CN]
-建议用obsidian打开
+大一开始做的一些渣渣笔记,不全0.0  
+java笔记来自[https://www.itbaima.cn/zh-CN]  
+建议用obsidian打开  
