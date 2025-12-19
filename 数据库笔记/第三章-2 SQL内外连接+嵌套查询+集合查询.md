@@ -80,7 +80,7 @@ eg:
 - ORDER BY 子句只能用于对最终查询结果排序,不能对最终结果排序
 - 任何情况下,ORDER BY 子句只能出现在最后
 - 对集合操作结果排序时,ORDER BY子句中用数字指定排序属性
-![[Pasted image 20251219212329.png]]
+![[ORDERBY1.png]]
 这里图中,左边是错的,右边是对的。或者只写一个ORDER BY Sno;
 ### 集函数
-![[Pasted image 20251219212455.png]]
+![[集函数.png]]
