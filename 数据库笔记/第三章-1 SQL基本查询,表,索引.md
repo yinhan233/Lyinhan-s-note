@@ -96,9 +96,9 @@ DROP INDEX <索引名>
 #### WHERE
 ![[WHERE.png]]
 #### IN
-![[Pasted image 20251218211416.png]]
+![[IN.png]]
 #### BETWEEN
-![[Pasted image 20251218211445.png]]
+![[BETWEEN.png]]
 #### \[NOT] LIKE '<字符串>'
 由此引出通配符
 '%'代表任意长度
@@ -111,7 +111,7 @@ AND OR NOT
 ORDER BY --> ASC升序DESC降序,默认升序
 多个列在ORDER BY 内有先后
 eg:
-![[Pasted image 20251218212012.png]]
+![[ORDER.png]]
 #### GROUP BY
 用于分组
 - 作用对象是查询的中间结果
@@ -119,7 +119,7 @@ eg:
 - 使用GROUP BY子句后，SELECT子句的列名列表中只能出现分组属性和集函数
 #### HAVING
 对最终结果再次筛选
-![[Pasted image 20251218212327.png]]
+![[HAVING.png]]
 #### WHERE与HAVING的不同
 WHERE作用于基表或视图，从中选择满足条件的元组
 HAVING短语作用于组，从中选择满足条件的组
