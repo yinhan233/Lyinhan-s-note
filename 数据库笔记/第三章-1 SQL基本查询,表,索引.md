@@ -55,7 +55,7 @@ ALTER TABLE Student DROP Sfin;
 DROP TABLE <表名>;
 ```
 ## 创建和使用索引
-![[索引.png]]
+![[数据库/索引.png]]
 #### 注意事项:
 1. 对于已含重复值的属性列不能建UNIQUE索引
 2. 对某个列建立UNIQUE索引后，插入新记录时，DBMS会自动检查新纪录再该列上是否取了重复值。
