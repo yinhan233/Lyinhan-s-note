@@ -10,5 +10,6 @@
   "obsidian-linter",
   "obsidian-outliner",
   "pdf-plus",
-  "remotely-save"
+  "remotely-save",
+  "obsidian-pandoc"
 ]
