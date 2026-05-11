@@ -5,11 +5,11 @@
   "obsidian-mind-map",
   "obsidian-git",
   "terminal",
-  "copilot",
   "dataview",
   "obsidian-linter",
   "obsidian-outliner",
   "pdf-plus",
   "remotely-save",
-  "obsidian-pandoc"
+  "obsidian-pandoc",
+  "remember-cursor-position"
 ]
