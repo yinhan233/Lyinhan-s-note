@@ -8,8 +8,8 @@
   "dataview",
   "obsidian-linter",
   "obsidian-outliner",
-  "pdf-plus",
   "remotely-save",
   "obsidian-pandoc",
-  "remember-cursor-position"
+  "remember-cursor-position",
+  "obsidian-annotator"
 ]
