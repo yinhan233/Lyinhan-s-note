@@ -1,6 +1,5 @@
 [
   "table-editor-obsidian",
-  "editing-toolbar",
   "obsidian-excalidraw-plugin",
   "obsidian-mind-map",
   "obsidian-git",
@@ -10,5 +9,6 @@
   "remotely-save",
   "obsidian-pandoc",
   "remember-cursor-position",
-  "obsidian-annotator"
+  "obsidian-annotator",
+  "editing-toolbar"
 ]
