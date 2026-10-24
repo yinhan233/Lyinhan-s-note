@@ -1,0 +1,18 @@
+flowchart TD
+    A(["输入一个 64 位分组"]) --> B["IP 初始置换"]
+    B --> C["分成 L、R，各 32 位；i = 0"]
+    C --> D["加密取第 i 个轮密钥，解密取第 15-i 个"]
+    D --> E["R 经 E 扩展：32 位变成 48 位"]
+    E --> F["与当前 48 位轮密钥异或"]
+    F --> G["8 个 S 盒：每 6 位映射为 4 位"]
+    G --> H["P 置换，得到 32 位 f 结果"]
+    H --> I["next = L XOR f；L = 旧 R；R = next"]
+    I --> J["i 加 1"]
+    J --> K{"i 小于 16？"}
+    K -->|是| D
+    K -->|否| L["将 R16 放高位，L16 放低位"]
+    L --> M["FP 最终置换"]
+    M --> N(["✓ 返回 64 位输出"])
+    classDef default fill:#edf4ff,stroke:#365373,color:#162b45
+    classDef decision fill:#fff0bd,stroke:#856510,color:#392b08
+    class K decision

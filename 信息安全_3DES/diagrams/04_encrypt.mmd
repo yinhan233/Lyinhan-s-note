@@ -1,0 +1,23 @@
+flowchart TD
+    A(["开始 CBC 加密"]) --> B["写入 8 字节标识和 8 字节 IV"]
+    B --> C["previous = IV"]
+    C --> D["读取最多 8 字节，得到 count"]
+    D --> E{"发生读取错误？"}
+    E -->|是| X(["返回失败，交给 main 清理"])
+    E -->|否| F{"count 小于 8？"}
+    F -->|是| G["标记 last；补零并在末字节写 8-count"]
+    F -->|否| H["标记不是 last"]
+    G --> I["明文块 XOR previous"]
+    H --> I
+    I --> J["DES 加密 K1 → 解密 K2 → 加密 K3"]
+    J --> K["previous = 当前密文；写出 8 字节"]
+    K --> L{"是 last？"}
+    L -->|否| D
+    L -->|是| Z(["✓ 返回成功"])
+    B -.->|写入失败| X
+    K -.->|写入失败| X
+    classDef default fill:#edf4ff,stroke:#365373,color:#162b45
+    classDef decision fill:#fff0bd,stroke:#856510,color:#392b08
+    classDef bad fill:#ffe8e8,stroke:#9d3434,color:#531c1c
+    class E,F,L decision
+    class X bad

@@ -1,0 +1,23 @@
+flowchart TD
+    A(["开始"]) --> D["检查参数、密钥和操作类型"]
+    D --> E{"加密还是解密？"}
+    E -->|加密| F["解析指定 IV 或生成随机 IV"]
+    E -->|解密| G["生成三套 DES 轮密钥"]
+    F --> G
+    G --> H["二进制打开输入，独占新建输出"]
+    H --> I["调用 encrypt_stream 或 decrypt_stream"]
+    I --> J["关闭两个文件并检查关闭结果"]
+    J --> K{"全部成功？"}
+    K -->|是| L(["✓ 打印完成并返回 0"])
+    K -->|否| M["删除本次新建的不完整输出"]
+    M --> N(["返回失败"])
+    D -.->|参数错误| N
+    F -.->|IV 无效或随机源失败| N
+    H -.->|打开失败，关闭已打开的输入| N
+    classDef default fill:#edf4ff,stroke:#365373,color:#162b45
+    classDef decision fill:#fff0bd,stroke:#856510,color:#392b08
+    classDef good fill:#e3f5e6,stroke:#286e38,color:#163b1e
+    classDef bad fill:#ffe8e8,stroke:#9d3434,color:#531c1c
+    class E,K decision
+    class L good
+    class M,N bad

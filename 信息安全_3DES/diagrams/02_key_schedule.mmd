@@ -1,0 +1,14 @@
+flowchart TD
+    A(["输入一个 64 位 DES 密钥"]) --> B["PC1 选择 56 位，去掉 8 个校验位"]
+    B --> C["拆成 C 和 D，各 28 位；i = 0"]
+    C --> D["查 SHIFTS 表，取当前轮移动量"]
+    D --> E["C、D 分别在 28 位范围内循环左移"]
+    E --> F["拼接 C 与 D，得到 56 位"]
+    F --> G["PC2 选择 48 位，保存为 round 的第 i 项"]
+    G --> H["i 加 1"]
+    H --> I{"i 小于 16？"}
+    I -->|是| D
+    I -->|否| J(["✓ 得到 16 个轮密钥"])
+    classDef default fill:#edf4ff,stroke:#365373,color:#162b45
+    classDef decision fill:#fff0bd,stroke:#856510,color:#392b08
+    class I decision

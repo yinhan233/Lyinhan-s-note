@@ -1,0 +1,10 @@
+flowchart TD
+    A["main.c<br/>命令行、密钥解析、随机 IV<br/>打开与关闭文件、错误提示"]
+    B["file_crypto.c / file_crypto.h<br/>CBC、文件头、按块读写<br/>ANSI X9.23 填充与去填充"]
+    C["des3.c / des3.h<br/>DES 与 3DES 单块运算<br/>密钥调度、字节转换"]
+    A -->|传入文件流并接收结果| B
+    A -->|初始化密钥| C
+    B -->|字节转换和单块加解密| C
+    classDef default fill:#edf4ff,stroke:#365373,color:#162b45
+    classDef entry fill:#e3f5e6,stroke:#286e38,color:#163b1e
+    class A entry

@@ -1,0 +1,25 @@
+flowchart TD
+    A(["开始 CBC 解密"]) --> B["读取并检查标识、IV 和第一个密文块"]
+    B --> C["previous = IV，current = 第一密文块"]
+    C --> D["预读 next，得到 count"]
+    D --> E{"读取错误或不足一个分组？"}
+    E -->|是| X(["返回失败，交给 main 清理"])
+    E -->|否| F["保存 current 的原始密文为 cipher"]
+    F --> G["DES 解密 K3 → 加密 K2 → 解密 K1"]
+    G --> H["解密结果 XOR previous，得到明文块"]
+    H --> I{"count 为 0？"}
+    I -->|否| J["写出全部 8 字节明文"]
+    J --> K["previous = cipher；current = next"]
+    K --> D
+    I -->|是| L{"长度字节为 1 到 8 且其余填充全零？"}
+    L -->|否| X
+    L -->|是| M["只写出前 8-padding 字节"]
+    M --> Z(["✓ 返回成功"])
+    B -.->|头部或首块无效| X
+    J -.->|写入失败| X
+    M -.->|写入失败| X
+    classDef default fill:#edf4ff,stroke:#365373,color:#162b45
+    classDef decision fill:#fff0bd,stroke:#856510,color:#392b08
+    classDef bad fill:#ffe8e8,stroke:#9d3434,color:#531c1c
+    class E,I,L decision
+    class X bad
