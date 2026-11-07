@@ -49,10 +49,10 @@ cmake --build build
 查看本机支持的生成器：
 
 ```bash
-cmake --help
+cmake -help
 ```
 
-输出的 `Generators` 部分会列出可用生成器，并用 `*` 标出默认项。不要把 `cmake -G` 当作查看列表的正常用法：`-G` 后面需要生成器名称，单独使用会报缺少参数的错误。
+输出的 `Generators` 部分会列出可用生成器，并用 `*` 标出默认项。
 
 例如，在 Windows 命令提示符下使用 MinGW：
 
