@@ -570,4 +570,376 @@ message("myVar=${myVar}")
 | `set(... PARENT_SCOPE)`  | `myVar=cat`     | `myVar=dog`     |
 | `block(PROPAGATE myVar)` | `myVar=dog`     | `myVar=dog`     |
 
-相关官方文档：[CMake 命令行](https://cmake.org/cmake/help/v3.31/manual/cmake.1.html)、[CMake 语言](https://cmake.org/cmake/help/v3.31/manual/cmake-language.7.html)、[`set()`](https://cmake.org/cmake/help/v3.31/command/set.html)、[`block()`](https://cmake.org/cmake/help/v3.31/command/block.html)。
+## 循环与控制语句
+
+### `if()`：条件判断
+
+`if()`、`elseif()`、`else()`、`endif()` 用来组织分支。只执行第一个条件为真的分支；都不成立时，执行可选的 `else()` 分支。
+
+```text
+if(<条件>)
+    <命令>
+elseif(<条件>)
+    <命令>
+else()
+    <命令>
+endif()
+```
+
+#### 常量、变量与字符串
+
+判断条件时，先区分传入的是常量、变量名，还是带引号的字符串：
+
+* 真值常量包括 `1`、`ON`、`YES`、`TRUE`、`Y` 以及非零数值；英文布尔常量不区分大小写。
+* 假值常量包括 `0`、`OFF`、`NO`、`FALSE`、`N`、`IGNORE`、`NOTFOUND`、以 `-NOTFOUND` 结尾的字符串，以及空字符串 `""`。
+* `if(变量名)`：变量已经定义，且值不是假值常量时，结果为真；未定义则为假。所以非空普通字符串 `hello` 作为变量的值，也可以使这个判断成立。
+* `if("字符串")`：字符串内容本身是真值常量时才为真，**不是“只要字符串非空就为真”**。
+
+以下按前文 CMake 3.30 / 3.31 的策略行为说明，尤其是带引号的参数不会再被隐式当作变量名解引用。
+
+例如，假设没有另外定义名为 `hello` 的变量：
+
+```cmake
+set(v "hello")
+
+if(v)
+    message("if(v): ${v} is true")
+else()
+    message("if(v): ${v} is false")
+endif()
+
+if(${v})
+    message("after expansion: ${v} is true")
+else()
+    message("after expansion: ${v} is false")
+endif()
+```
+
+输出：
+
+```text
+if(v): hello is true
+after expansion: hello is false
+```
+
+这两次判断的过程不同：
+
+1. `if(v)` 读取变量 `v` 的值 `hello`；它不是假值常量，所以为真。
+2. `if(${v})` 先进行 `${v}` 展开，实际交给条件判断的是 `if(hello)`。此时还会尝试把 `hello` 当作变量名；在本例中它未定义，也不是真值常量，所以为假。
+
+因此，**`if(${v})` 不能一概解释成“把变量转成字符串判断”**；如果另有变量 `hello`，结果还可能受它的值影响。写成 `if("${v}")` 则直接判断字符串 `hello`，不会继续查找同名变量，但它仍不是真值常量，结果同样为假。
+
+判断字符串内容时，应明确使用比较运算，而不是笼统地禁止使用字符串：
+
+* 判断内容相等：`if("${v}" STREQUAL "hello")`。
+* 判断字符串非空：`if(NOT "${v}" STREQUAL "")`。
+
+#### 逻辑运算符
+
+CMake 使用关键字 `NOT`、`AND`、`OR`，不是 C/C++ 中的 `!`、`&&`、`||`。
+
+| 写法                | 含义          |
+| ----------------- | ----------- |
+| `NOT <条件>`        | 对条件结果取反     |
+| `<条件1> AND <条件2>` | 两个条件都为真时为真  |
+| `<条件1> OR <条件2>`  | 至少一个条件为真时为真 |
+
+比较、存在性等测试先求出结果，再进行逻辑运算。`NOT` 优先于 `AND` / `OR`；**`AND` 和 `OR` 同级，按从左到右求值，而且不短路**。复杂条件应使用括号，不要套用 C/C++ 中 `&&` 比 `||` 优先的规则。
+
+### 比较运算
+
+#### 数值、字符串与版本号
+
+不同类型的比较使用不同关键字，不能只凭两边看起来是什么内容来猜比较方式：
+
+| 比较关系 | 数值比较            | 字符串比较              | 版本号比较                   |
+| ---- | --------------- | ------------------ | ----------------------- |
+| 小于   | `LESS`          | `STRLESS`          | `VERSION_LESS`          |
+| 大于   | `GREATER`       | `STRGREATER`       | `VERSION_GREATER`       |
+| 等于   | `EQUAL`         | `STREQUAL`         | `VERSION_EQUAL`         |
+| 小于等于 | `LESS_EQUAL`    | `STRLESS_EQUAL`    | `VERSION_LESS_EQUAL`    |
+| 大于等于 | `GREATER_EQUAL` | `STRGREATER_EQUAL` | `VERSION_GREATER_EQUAL` |
+| 不等于  | `NOT a EQUAL b` | `NOT a STREQUAL b` | `NOT a VERSION_EQUAL b` |
+
+表中的 `a`、`b` 表示操作数。CMake 没有独立的 `NOT_EQUAL` 关键字，不相等要对相等比较使用 `NOT`。
+
+* 数值比较把两侧作为数值解释，例如 `if(2 LESS 10)`。
+* 字符串比较按字典序进行，不能用来代替数值或版本号比较。
+* 版本号比较按各段整数比较，省略的段按 `0` 处理，例如 `1.2` 和 `1.2.0` 在版本号比较中相等。
+
+例如：
+
+```cmake
+if("1.10" STRLESS "1.2")
+    message("string: 1.10 < 1.2")
+endif()
+
+if("1.10" VERSION_GREATER "1.2")
+    message("version: 1.10 > 1.2")
+endif()
+```
+
+输出：
+
+```text
+string: 1.10 < 1.2
+version: 1.10 > 1.2
+```
+
+#### 路径比较：`PATH_EQUAL`
+
+`PATH_EQUAL` 按路径组成部分判断相等，会折叠连续的路径分隔符；`STREQUAL` 则比较字符串内容：
+
+```cmake
+if("/path//to/myfile" PATH_EQUAL "/path/to/myfile")
+    message("PATH_EQUAL is true")
+else()
+    message("PATH_EQUAL is false")
+endif()
+
+if("/path//to/myfile" STREQUAL "/path/to/myfile")
+    message("STREQUAL is true")
+else()
+    message("STREQUAL is false")
+endif()
+```
+
+输出：
+
+```text
+PATH_EQUAL is true
+STREQUAL is false
+```
+
+`PATH_EQUAL` 从 CMake 3.24 开始提供。它**不是完整的路径规范化，也不查询文件系统**：不会自动消去 `.` / `..`，不会把反斜杠转成正斜杠，也不能据此判断两个符号链接是否指向同一个文件。
+
+### 正则表达式：`MATCHES`
+
+`MATCHES` 用于正则匹配，圆括号可以捕获匹配的部分：
+
+```cmake
+if("my phone number is 12345" MATCHES "my phone number is ([0-9]+)")
+    message("phone number:${CMAKE_MATCH_1}")
+endif()
+```
+
+输出：
+
+```text
+phone number:12345
+```
+
+这里 `([0-9]+)` 是第一个捕获组，`${CMAKE_MATCH_1}` 得到 `12345`；`${CMAKE_MATCH_0}` 则对应整个匹配内容。`MATCHES` 默认可以匹配子串，如果要限制为整个字符串，可在正则两端使用 `^` 和 `$`。
+
+### 存在性测试
+
+| 关键字       | 写法                                                       | 判断内容                              |
+| --------- | -------------------------------------------------------- | --------------------------------- |
+| `COMMAND` | `COMMAND <命令名>`                                          | 是否存在可调用的内置命令、函数或宏                 |
+| `POLICY`  | `POLICY <CMP编号>`                                         | 当前 CMake 是否认识这条策略；不表示它当前一定为 `NEW` |
+| `TARGET`  | `TARGET <目标名>`                                           | 是否已经创建这个构建目标，不是检查磁盘上的同名文件         |
+| `TEST`    | `TEST <测试名>`                                             | 是否已经通过 `add_test()` 定义这个测试        |
+| `DEFINED` | `DEFINED name`、`DEFINED CACHE{name}`、`DEFINED ENV{name}` | 是否定义了变量或指定的缓存项、环境变量，不要求它的值为真或非空   |
+| `IN_LIST` | `<变量或字符串> IN_LIST <列表变量名>`                               | 左侧的值是否属于右侧列表                      |
+
+例如，`if(COMMAND message)` 检查命令是否存在，`if(DEFINED myVar)` 检查变量是否定义；这里传的是名称，不要先用 `${myVar}` 把它替换成变量的值。
+
+`DEFINED myVar` 对普通变量或同名缓存任意一个存在都可能为真。要专门检查缓存项或环境变量，应分别使用 `DEFINED CACHE{myVar}`、`DEFINED ENV{myVar}`。
+
+#### `IN_LIST`：左侧也可能读取变量
+
+```cmake
+set(list1 a b c d)
+set(list2 e f g)
+set(a "f")
+
+if(a IN_LIST list1)
+    message("a is in list1")
+elseif(a IN_LIST list2)
+    message("a is in list2")
+else()
+    message("a is not in list1 or list2")
+endif()
+
+unset(a)
+
+if(a IN_LIST list1)
+    message("a is in list1")
+elseif(a IN_LIST list2)
+    message("a is in list2")
+else()
+    message("a is not in list1 or list2")
+endif()
+```
+
+输出：
+
+```text
+a is in list2
+a is in list1
+```
+
+第一次判断时，变量 `a` 已定义，左侧实际使用它的值 `f`。取消定义后，在没有同名缓存的前提下，左侧按字面量 `a` 处理，因此两次命中的列表不同。
+
+如果无论变量是否存在，都只想检查字符 `a`，应写 `if("a" IN_LIST list1)`。右侧 `list1` 是列表变量的名称，不要写成 `${list1}` 将它提前拆成多个参数。
+
+### 文件操作测试
+
+这些都是 `if()` 等条件中可使用的测试，不是独立的文件操作命令：
+
+| 测试关键字           | 写法                          | 判断内容 / 注意事项                       |
+| --------------- | --------------------------- | --------------------------------- |
+| `EXISTS`        | `EXISTS <路径>`               | 路径是否存在且可读；检查符号链接时会解析其目标           |
+| `IS_READABLE`   | `IS_READABLE <路径>`          | 路径是否存在且可读；检查读取能力时比借用 `EXISTS` 更明确 |
+| `IS_WRITABLE`   | `IS_WRITABLE <路径>`          | 路径是否存在且可写                         |
+| `IS_EXECUTABLE` | `IS_EXECUTABLE <路径>`        | 路径是否存在且可执行                        |
+| `IS_NEWER_THAN` | `<文件1> IS_NEWER_THAN <文件2>` | 文件1比文件2新，或两者时间相同，或任一文件不存在时为真      |
+| `IS_DIRECTORY`  | `IS_DIRECTORY <路径>`         | 路径是否为目录                           |
+| `IS_SYMLINK`    | `IS_SYMLINK <路径>`           | 路径是否为符号链接                         |
+| `IS_ABSOLUTE`   | `IS_ABSOLUTE <路径>`          | 是否具有绝对路径的形式，不要求路径实际存在             |
+
+`IS_READABLE`、`IS_WRITABLE`、`IS_EXECUTABLE` 从 CMake 3.29 开始提供。文件系统测试建议使用明确的绝对路径；不要假设字符串中的 `~/` 会像 shell 那样被展开为用户目录。
+
+注意 `IS_NEWER_THAN` **不是严格的“修改时间大于”**。如果需要两个文件都真实存在，应先明确测试它们是否存在，再进行时间比较。
+
+#### 常用的预定义变量
+
+| 变量                 | 含义                                            |
+| ------------------ | --------------------------------------------- |
+| `CMAKE_SOURCE_DIR` | 顶层源码目录的绝对路径，不是任意一个正在处理的 `CMakeLists.txt` 所在目录 |
+| `CMAKE_BINARY_DIR` | 顶层构建目录的绝对路径                                   |
+
+例如，可以把下面的检查放入项目的 `CMakeLists.txt`，在配置阶段拒绝源码目录内构建：
+
+```cmake
+if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
+    message(FATAL_ERROR "错误：禁止源码目录内构建，请使用 cmake -S . -B build")
+endif()
+```
+
+目录相同时，`FATAL_ERROR` 会终止配置。这段检查不会替你切换构建目录或清理已有生成文件；仍应在一开始就使用前文的 `cmake -S . -B build`。
+
+### 循环
+
+`foreach()` 适合遍历已有的一组值；`while()` 则在条件保持为真时反复执行。两者都能使用 `break()` 和 `continue()`。
+
+#### `foreach(... IN LISTS ...)`：依次遍历
+
+```cmake
+set(list1 a b c d)
+set(list2 e f g)
+
+foreach(v IN LISTS list1 list2)
+    message("v=${v}")
+endforeach()
+```
+
+输出：
+
+```text
+v=a
+v=b
+v=c
+v=d
+v=e
+v=f
+v=g
+```
+
+这里先遍历完 `list1`，再遍历 `list2`。`LISTS` 后面写列表变量名，而不是提前展开后的列表内容。
+
+#### `foreach(... IN ZIP_LISTS ...)`：按位置并行遍历
+
+```cmake
+set(list1 a b c d)
+set(list2 e f g)
+
+foreach(v IN ZIP_LISTS list1 list2)
+    message("v=${v_0},${v_1}")
+endforeach()
+```
+
+输出：
+
+```text
+v=a,e
+v=b,f
+v=c,g
+v=d,
+```
+
+只给一个循环变量名 `v` 时，CMake 为各个列表提供 `v_0`、`v_1` 等变量。循环次数由**最长的列表**决定；某个列表在当前轮没有元素时，对应的迭代变量未定义，展开后显示为空，不是提前结束整个循环。
+
+#### `foreach(... RANGE ...)`：按步长遍历整数
+
+```cmake
+foreach(v RANGE 1 8 2)
+    message("v=${v}")
+endforeach()
+```
+
+输出：
+
+```text
+v=1
+v=3
+v=5
+v=7
+```
+
+`RANGE <起点> <终点> [步长]` 从起点出发，取不超过终点的值，默认步长为 `1`。终点是可以包含的上界，但这个例子按步长到达 `7` 后，下一项为 `9`，所以不会输出 `8`。
+
+只写 `RANGE <终点>` 时，从 `0` 开始。这里使用非负整数、正步长，且终点不小于起点，不要把它当成可任意倒序遍历的语法。
+
+#### `while()`：每轮重新判断条件
+
+```cmake
+set(running ON)
+
+while(running)
+    message("while body")
+    set(running OFF)
+endwhile()
+```
+
+输出：
+
+```text
+while body
+```
+
+`while()` 使用与 `if()` 相同的条件判断规则。这里在循环体内把 `running` 改为假值，所以下一轮不再进入；如果条件一直不变为假，也没有执行 `break()`，就可能陷入无限循环。
+
+#### `break()` 与 `continue()`
+
+| 命令           | 作用                                        |
+| ------------ | ----------------------------------------- |
+| `break()`    | 退出当前最内层循环，不再开始它的下一轮                       |
+| `continue()` | 跳过当前轮剩余命令，进入当前最内层循环的下一轮；`while()` 会重新检查条件 |
+
+例如：
+
+```cmake
+foreach(v RANGE 1 5)
+    if(v EQUAL 2)
+        continue()
+    endif()
+
+    if(v EQUAL 4)
+        break()
+    endif()
+
+    message("v=${v}")
+endforeach()
+```
+
+输出：
+
+```text
+v=1
+v=3
+```
+
+遇到 `2` 时只跳过这一轮；遇到 `4` 时结束整个当前循环，因此后面的 `5` 也不会执行。
+
+相关官方文档：[`if()`](https://cmake.org/cmake/help/v3.31/command/if.html)、[`foreach()`](https://cmake.org/cmake/help/v3.31/command/foreach.html)、[`while()`](https://cmake.org/cmake/help/v3.31/command/while.html)、[`CMAKE_SOURCE_DIR`](https://cmake.org/cmake/help/v3.31/variable/CMAKE_SOURCE_DIR.html)、[`CMAKE_BINARY_DIR`](https://cmake.org/cmake/help/v3.31/variable/CMAKE_BINARY_DIR.html)。
